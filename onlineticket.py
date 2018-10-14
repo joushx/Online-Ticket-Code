@@ -1,89 +1,84 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import zlib
+import sys
+import gzip
+from cryptography.hazmat.primitives.asymmetric import dsa
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+import base64
+import hashlib
+import xmltodict
+import os
 
-def parse_freetext(text):
+from ticket import Ticket
 
-	blocks = []
-	
-	cursor = 0
+result = [" "*300]*15
+def set_text(line, column, text):
+	length = len(text)
+	before = result[line][:column]
+	after = result[line][column + length:]
+	result[line] = before + text + after
 
-	while cursor < len(text):
+t = Ticket.from_file(sys.argv[1])
 
-		coordinates = text[cursor:cursor+13]
-		
-		line = int(coordinates[0:2])
-		cell = int(coordinates[2:4])
-		length = int(coordinates[11:13])
+print("Header: {}".format(t.header))
+print("Version: {}".format(t.version))
+print("Issuer: {}".format(t.issuer))
+print("Key Nr: {}".format(t.key_id))
+print("Signature: {}".format(t.signature))
+print("Payload size: {}".format(t.payload_size))
+print("---")
+print("Name: {}".format(t.payload.header.name))
+print("Version: {}".format(t.payload.header.version))
+print("Length: {}".format(t.payload.header.length))
+print("Issuer: {}".format(t.payload.header.issuer))
+print("Order: {}".format(t.payload.header.order))
+print("Date: {}-{}-{} {}:{}".format(t.payload.header.date.year,t.payload.header.date.month,t.payload.header.date.day, t.payload.header.date.hour, t.payload.header.date.minute))
+print("Flag: {}".format(t.payload.header.flag))
+print("Language: {}".format(t.payload.header.lang))
+print("Second language: {}".format(t.payload.header.lang2))
+print("---")
+s = t.payload.text
+print("Name: {}".format(s.name))
+print("Version: {}".format(s.version))
+print("Length: {}".format(s.length))
+print("Type: {}".format(s.type))
+print("Blocks: {}".format(s.n_blocks))
 
-		block = {"line":line,"cell":cell,"length":length,"text":text[cursor+13:cursor+13+length]}
+print("---")
 
-		blocks.append(block)
+for b in s.blocks:
+	line = int(b.line)
+	column = int(b.column)
+	length = int(b.length)
 
-		cursor = cursor+13+length
+	for part in b.text.split("\n"):
+		set_text(line, column, part)
+		line += 1
 
-	return blocks
+print("\n".join(result))
 
+print("---")
 
+keys = xmltodict.parse(open("uic-keys/keys.xml").read())
+key = list(filter(lambda k: k["issuerCode"] == t.issuer, keys["keys"]["key"]))
 
-f = open("onlineticket.bin", "rb")
+if len(key) == 0:
+	print("Cannot find public key")
+	os.exit()
 
-try:
-    byte = f.read()
-    print "Ticket-Typ: " + byte[0:3] + " (UIC)"
-    print "Version: " + byte[3:5]
-    print "Aussteller: " + byte[5:9]
-    print "Schlüsselnummer: " + byte[9:14]
-    print "Signatur: " + byte[14:64].encode("hex")
+key = key[0]
+print("Found key of {}".format(key["issuerName"]))
 
-    print "Padding " + byte[64:65] + " -------------------"
+der = base64.b64decode(key["publicKey"])
+print(der.hex())
+key = load_der_public_key(der, backend=default_backend())
 
-    print "Länge des zlib-Teils: " + byte[66:68]
-    print "zlib-Header: " + byte[68:70].encode("hex")
+print(key)
 
-    zlib = zlib.decompress(byte[68:])
-
-    print "Header: " + zlib[0:6]
-    print "Version: " + zlib[6:8]
-    print "Länge: " + zlib[8:12]
-    print "Aussteller: " + zlib[12:16]
-    print "Auftragsnummer: " + zlib[16:33]
-    print "Ausstellungsdatum: " + zlib[36:44]
-    print "Ausstellungszeit: " + zlib[44:48]
-    print "Ticket-Typ: " + zlib[48:49]
-    print "Sprache: " + zlib[49:51]
-
-    start = zlib.index("U_TLAY")
-    print "Header: " + zlib[start:start+6]
-    print "?: " + zlib[start+6:start+12]
-    print "Typ: " + zlib[start+12:start+16]
-    print "Blöcke: " + zlib[start+16:start+20]
-
-    blocks = parse_freetext(zlib[start+20:])
-
-    current_cell = 0
-    current_line = 0
-
-    for block in blocks:
-
-    	if block["line"] != current_line:
-    		current_cell = 0
-    		print "\n",
-
-    	
-
-    	
-
-    	cell = int((block["cell"] - current_cell))
-
-    	for i in range(0,cell):
-    		print " ",
-
-    	print block["text"],
-
-    	current_line = block["line"]
-    	current_cell = cell
-
-finally:
-    f.close()
+hash = hashlib.sha1(b"!")
+result = key.verify(hash, t.signature)
+print(result)
