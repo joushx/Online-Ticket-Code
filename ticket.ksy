@@ -27,31 +27,45 @@ seq:
 types:
   payload:
     seq:
-    - id: header
-      type: header
-    - id: text
-      type: text
+    - id: section
+      type: section
+      repeat: expr
+      repeat-expr: 2
     types:
-      header:
+      section:
         seq:
         - id: name
-          contents: "U_HEAD"
+          type: str
+          size: 6
         - id: version
           size: 2
           type: str
         - id: length
           size: 4
           type: str
-        - id: issuer
+        - id: data
+          size: length.to_i - 12
+          type: section_data
+      section_data:
+        seq:
+        - id: head
+          type: head
+          if: _parent.name == "U_HEAD"
+        - id: tlay
+          type: tlay
+          if: _parent.name == "U_TLAY"
+      head:
+        seq:
+        - id: rics
           size: 4
           type: str
-        - id: order
+        - id: ticket_id
           size: 20
           type: str
-        - id: date
+        - id: edition_time
           type: date
         - id: flag
-          type: str
+          type: flags
           size: 1
         - id: lang
           type: str
@@ -59,16 +73,15 @@ types:
         - id: lang2
           type: str
           size: 2
-      text:
+        types:
+          flags:
+            seq:
+              - id: international
+                type: b1
+              - id: test
+                type: b1
+      tlay:
         seq:
-          - id: name
-            contents: "U_TLAY"
-          - id: version
-            size: 2
-            type: str
-          - id: length
-            size: 4
-            type: str
           - id: type
             size: 4
             type: str
