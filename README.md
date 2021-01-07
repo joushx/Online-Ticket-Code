@@ -1,4 +1,1 @@
-Online-Ticket-Code
-==================
-
-Python Programm, um den Aztec-Code auf einem UIC-Online-Ticket auszulesen
+Parses online tickets for trains following UIC 918-3
