@@ -10,33 +10,92 @@ sudo apt install kaitai-struct-compiler
 
 1. Run `bootstrap.sh` to setup the environment (python requiements, generate models, downlad keys)
 2. Scan the aztec code of the online ticket e.g. using your phone and write the binary data into a file
-3. Run `python3 onlineticket.py <file>`
+3. Run `python examples/parse.py examples/ticket-visible-in-a-movie-scene`
 
 ## Example
 
 The `example` directory contains a file that was extracted from a ticket that was once visible in a movie scene and probably contains fake data. This is the output of this script:
 
 ```
-Header: #UT
+== HEADER ==
+version: 01
+issuer: 0080
+signature_key_id: 00006
+signature: 302c02144825665130eae29c9ee2045f10c4e54701ce2a8002143b27279307cc42e43ebfd8ba689e2a92147203da00
+payload_size: 0234
+== PAYLOAD ==
+-- U_HEAD --
 Version: 01
-Issuer: 0080
-Key Nr: 00006
-Signature: 302c02144825665130eae29c9ee2045f10c4e54701ce2a8002143b27279307cc42e43ebfd8ba689e2a92147203da00
-Payload size: 0234
----
-U_HEAD
----
-RICS: 0080
-Order: PA2B1H-5
-Date: 2018-11-12 21:04
-Flag: <ticket.Ticket.Payload.Head.Flags object at 0x7f53800bddd8>
-Language: DE
-Second language: DE
----
-0080BL
----
-{'_io': <kaitaistruct.KaitaiStream object at 0x7f53800b5320>, '_parent': <ticket.Ticket.Payload object at 0x7f53800b56d8>, '_root': <ticket.Ticket object at 0x7f5381dcb3c8>, 'name': '0080BL', 'version': '03', 'length': '0303', '_raw_data': b'0311911201819112018362243814\x0016S0010015Super SparpreisS00200011S0030001BS00900051-0-0S01200010S0140002S2S0150007HamburgS0160015Frankfurt(Main)S0210019HH-Hbf  8:28 IC2279S0230018Holzer-Nims SophieS026000213S0280018Sophie#Holzer-NimsS031001019.11.2018S032001019.11.2018S03500042549S03600042042', 'data': <ticket.Ticket.Payload.SectionData object at 0x7f53800bdf98>}
----
+company: 0080
+ticket_id: PA2B1H-5
+edition_time: {'year': '2018', 'month': '11', 'day': '12', 'hour': '21', 'minute': '04'}
+flags: {'international': False, 'test': False}
+languages: ['DE', 'DE']
+-- 0080BL --
+Version: 03
+Valid from: 19112018
+Valid to: 19112018
+Serial: 362243814
+Pairs:
+001: Super Sparpreis
+002: 1
+003: B
+009: 1-0-0
+012: 0
+014: S2
+015: Hamburg
+016: Frankfurt(Main)
+021: HH-Hbf  8:28 IC2279
+023: Holzer-Nims Sophie
+026: 13
+028: Sophie#Holzer-Nims
+031: 19.11.2018
+032: 19.11.2018
+035: 2549
+036: 2042
+== RAW ==
+{ 'header': { 'issuer': '0080',
+              'payload_size': '\x00\x00\x000234',
+              'signature': '302c02144825665130eae29c9ee2045f10c4e54701ce2a8002143b27279307cc42e43ebfd8ba689e2a92147203da00',
+              'signature_key_id': '00006',
+              'version': '01'},
+  'payload': [ { 'content': { 'company': '0080',
+                              'edition_time': { 'day': '12',
+                                                'hour': '21',
+                                                'minute': '04',
+                                                'month': '11',
+                                                'year': '2018'},
+                              'flags': {'international': False, 'test': False},
+                              'languages': ['DE', 'DE'],
+                              'ticket_id': 'PA2B1H-5\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'},
+                 'length': '0053',
+                 'record_id': 'U_HEAD',
+                 'version': '01'},
+               { 'content': { 'pairs': [ { 'content': 'Super Sparpreis',
+                                           'id': '001'},
+                                         {'content': '1', 'id': '002'},
+                                         {'content': 'B', 'id': '003'},
+                                         {'content': '1-0-0', 'id': '009'},
+                                         {'content': '0', 'id': '012'},
+                                         {'content': 'S2', 'id': '014'},
+                                         {'content': 'Hamburg', 'id': '015'},
+                                         { 'content': 'Frankfurt(Main)',
+                                           'id': '016'},
+                                         { 'content': 'HH-Hbf  8:28 IC2279',
+                                           'id': '021'},
+                                         { 'content': 'Holzer-Nims Sophie',
+                                           'id': '023'},
+                                         {'content': '13', 'id': '026'},
+                                         { 'content': 'Sophie#Holzer-Nims',
+                                           'id': '028'},
+                                         {'content': '19.11.2018', 'id': '031'},
+                                         {'content': '19.11.2018', 'id': '032'},
+                                         {'content': '2549', 'id': '035'},
+                                         {'content': '2042', 'id': '036'}],
+                              'serial': '362243814',
+                              'valid_from': '19112018',
+                              'valid_to': '19112018'},
+                 'length': '0303',
+                 'record_id': '0080BL',
+                 'version': '03'}]
 ```
-
-Note that some data specific for german railways are not parsed yet
